@@ -2,6 +2,7 @@ import random
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+from phe import paillier
 
 def generate_value(n, min_val = 0, max_val = 100):
     return [random.randint(min_val, max_val) for _ in range(n)]
@@ -18,6 +19,15 @@ def non_private(values):
     elasped = computing_time(start, end)
     
     return mean, elasped
+
+
+def pillier_average(values):
+    public_key, private_key = paillier.generate_paillier_keypair()
+
+
+
+
+
 
 def main():
     values = generate_value(5)
