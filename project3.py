@@ -22,8 +22,20 @@ def non_private(values):
 
 
 def pillier_average(values):
+    start = time.time()
+
     public_key, private_key = paillier.generate_paillier_keypair()
 
+    enc_values = [public_key.excrypt(x) for x in values]
+    enc_sum = sum(enc_values)
+    dec_sum = private_key.decrypt(enc_sum)
+
+    mean = dec_sum / len(values)
+    
+    end = time.time()
+    elasped = computing_time(start, end)
+
+    return mean, elasped
 
 
 
