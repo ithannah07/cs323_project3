@@ -2,7 +2,6 @@ import random
 import time
 import math
 import numpy as np
-import matplotlib.pyplot as plt
 from phe import paillier
 
 def generate_value(n, min_val = 0, max_val = 100):
@@ -45,7 +44,7 @@ def paillier_average(values):
 def shamir_secret_sharing(values, n):
     start = time.time()
     # t = floor(n/2)
-    t = math.floor(n/2)
+    t = max(2, math.floor(n/2))
     recovered = []
 
     # 1. Define polynomial f(x) of degree t-1 for each value
@@ -93,13 +92,13 @@ def generate_shares(coeffs, n):
 def t_shares(shares, t):
     return random.sample(shares, t)
 
-def reconstruction(seclected_shares):
+def reconstruction(selected_shares):
     """
     selected shares: [(x1, y1), (x2, y2), ..., (xt, yt)]
     f_i(0) = Σ f_i(j) * l_i(j)
     """
-    xs = [x for x, _ in seclected_shares]
-    ys = [y for _, y in seclected_shares]
+    xs = [x for x, _ in selected_shares]
+    ys = [y for _, y in selected_shares]
 
     secret_i = 0.0
 
