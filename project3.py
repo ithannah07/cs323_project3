@@ -51,13 +51,17 @@ def shamir_secret_sharing(values, n):
 
         # 2. n개의 share (i, f(i)) 생성
         shares = generate_shares(coeffs, n)
-
+        print("shares: ", shares)
     
-    
-
     # 3. 임의로 t개 이상의 share 선택 (trusted party들)
+        selected_shares = t_shares(shares, t)
+        print("selected shares: ", selected_shares)
+
     # 4. Lagrange interpolation을 사용해 원래 값 복원
+    reconstruction_value = reconstruction(selected_shares)
+
     # 5. 모든 값 복원 후 평균 계산
+    mean = reconstruction_value / len(values)
     end = time.time()
     elasped = computing_time(start, end)
 
@@ -79,10 +83,37 @@ def generate_shares(coeffs, n):
         shares.append((i, result))
     return shares
 
+def t_shares(shares, t):
+    return random.sample(shares, t)
+
 def main():
     values = generate_value(5)
     mean = non_private(values)
     print("average: ", mean)
+
+def reconstruction(seclected_shares):
+    """
+    selected shares: [(x1, y1), (x2, y2), ..., (xt, yt)]
+    f_i(0) = Σ f_i(j) * l_i(j)
+    """
+    xs = [x for x, _ in seclected_shares]
+    ys = [y for _, y in seclected_shares]
+
+    secret_i = 0.0
+
+    for j in range(len(xs)):
+        xj = xs[j]
+        fj = ys[j]
+        lj = 1.0
+
+        for k in range(len(xs)):
+            if k != j:
+                xk = xs[k]
+                lj *= ( 0- xk) / (xj - xk)
+        secret_i += fj * lj
+
+    return int(round(secret_i))
+
 
 if __name__ == "__main__":
     main()
