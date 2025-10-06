@@ -3,6 +3,7 @@ import time
 import math
 import numpy as np
 from phe import paillier
+import matplotlib.pyplot as plt
 
 def generate_value(n, min_val = 0, max_val = 100):
     return [random.randint(min_val, max_val) for _ in range(n)]
@@ -51,20 +52,20 @@ def shamir_secret_sharing(values, n):
     for v in values:
         coeffs = generate_polynomial(v, t)
 
-        # 2. n개의 share (i, f(i)) 생성
+        # 2. generating n share (i, f(i))
         shares = generate_shares(coeffs, n)
         # print("shares: ", shares)
     
-        # 3. 임의로 t개 이상의 share 선택 (trusted party들)
+        # 3. randomly select at least t shares (trusted parties
         selected_shares = t_shares(shares, t)
         # print("selected shares: ", selected_shares)
 
-        # 4. Lagrange interpolation을 사용해 원래 값 복원
+        # 4. reconstructing the secret value
         reconstruction_value = reconstruction(selected_shares)
         # print("reconstruction value: ", reconstruction_value)
         recovered.append(reconstruction_value)
 
-    # 5. 모든 값 복원 후 평균 계산
+    # 5. computing the average after recovering all values
     mean = float(round(sum(recovered) / len(recovered), 3))
     end = time.time()
     elasped = computing_time(start, end)
@@ -115,19 +116,58 @@ def reconstruction(selected_shares):
 
     return int(round(secret_i))
 
+def avg_runtime(function, *args, runs = 5):
+    times = []
+    for _ in range(runs):
+        _, t = function(*args)
+        times.append(t)
+    return sum(times) / runs
+
+
 def main():
     
-    for _ in range(5):
-        n = input("Enter the number of total parties: ")
-        n = int(n)
-        values = generate_value(n)
-        avg1, t1 = non_private(values)
-        avg2, t2 = paillier_average(values)
-        avg3, t3 = shamir_secret_sharing(values, n)
-        print("Non-private, average: ", avg1, "elapsed time: ", t1)
-        print("Paillier, average: ", avg2, "elapsed time: ", t2)
-        print("Shamir, average: ", avg3, "elapsed time: ", t3)
-        print()
+    # just print out the values and their averages
+    # for n in [5, 10, 25, 50, 100]:
+    #     values = generate_value(n)
+    #     avg1, t1 = non_private(values)
+    #     avg2, t2 = paillier_average(values)
+    #     avg3, t3 = shamir_secret_sharing(values, n)
+    #     print("Non-private, average: ", avg1, "elapsed time: ", t1)
+    #     print("Paillier, average: ", avg2, "elapsed time: ", t2)
+    #     print("Shamir, average: ", avg3, "elapsed time: ", t3)
+    #     print()
+    
+    n_values = [5, 10, 25, 50, 100]
+    times_non_private = []
+    times_paillier = []
+    times_shamir = []
+
+    for n in n_values:
+        avg_non_private_times = avg_runtime(non_private, generate_value(n))
+        avg_paillier_times = avg_runtime(paillier_average, generate_value(n))
+        avg_shamir_times = avg_runtime(shamir_secret_sharing, generate_value(n), n)
+
+        times_non_private.append(avg_non_private_times)
+        times_paillier.append(avg_paillier_times)
+        times_shamir.append(avg_shamir_times)
+    
+    # Plotting the results
+    plt.figure(figsize=(10, 6))
+    plt.plot(n_values, times_non_private, label = "Non-private")
+    plt.plot(n_values, times_paillier, label = "Paillier")
+    plt.plot(n_values, times_shamir, label = "Shamir")
+    plt.xticks(n_values)
+    plt.xlabel("Number of values (n)")
+    plt.ylabel("Average runtime (seconds)")
+    plt.title("Average Runtime vs Number of Values")
+    plt.legend()
+    plt.grid()
+    plt.show()
+    plt.savefig("average_runtime.png")
+
+
+
+        
     
 
 if __name__ == "__main__":
