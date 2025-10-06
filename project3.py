@@ -5,6 +5,8 @@ import numpy as np
 from phe import paillier
 import matplotlib.pyplot as plt
 
+P = 1009
+
 def generate_value(n, min_val = 0, max_val = 100):
     return [random.randint(min_val, max_val) for _ in range(n)]
 
@@ -65,6 +67,10 @@ def shamir_secret_sharing(values, n):
         # print("reconstruction value: ", reconstruction_value)
         recovered.append(reconstruction_value)
 
+        if reconstruction_value != v:
+            print("Original value: ", v, "Reconstructed value: ", reconstruction_value)
+            print("Error in reconstruction!")
+
     # 5. computing the average after recovering all values
     mean = float(round(sum(recovered) / len(recovered), 3))
     end = time.time()
@@ -72,28 +78,31 @@ def shamir_secret_sharing(values, n):
 
     return mean, elasped
 
-def generate_polynomial(value, t):
+def generate_polynomial(value, t, p = P):
     degree = t - 1
-    coeffs = [value] + [random.randint(0, 100) for _ in range(degree)]
+    coeffs = [value % p] + [random.randint(1, p-1) for _ in range(degree)]
     return coeffs
 
-def computing_polynomial(coeffs, x):
+def computing_polynomial(coeffs, x, p = P):
     result = 0
     for i, coeff in enumerate(coeffs):
-        result += coeff * (x ** i)
+        result = (result + coeff * pow(x, i, p)) % p
     return result
 
-def generate_shares(coeffs, n):
+def generate_shares(coeffs, n, p = P):
     shares = []
     for i in range(1, n + 1):
-        result = computing_polynomial(coeffs, i)
+        result = computing_polynomial(coeffs, i, p)
         shares.append((i, result))
     return shares
 
 def t_shares(shares, t):
     return random.sample(shares, t)
 
-def reconstruction(selected_shares):
+def mod_inverse(num, p = P):
+    return pow(num, -1, p)
+
+def reconstruction(selected_shares, p = P):
     """
     selected shares: [(x1, y1), (x2, y2), ..., (xt, yt)]
     f_i(0) = Σ f_i(j) * l_i(j)
@@ -101,20 +110,20 @@ def reconstruction(selected_shares):
     xs = [x for x, _ in selected_shares]
     ys = [y for _, y in selected_shares]
 
-    secret_i = 0.0
+    secret = 0
 
     for j in range(len(xs)):
-        xj = xs[j]
-        fj = ys[j]
-        lj = 1.0
-
+        num = 1
+        den = 1
         for k in range(len(xs)):
             if k != j:
-                xk = xs[k]
-                lj *= ( 0- xk) / (xj - xk)
-        secret_i += fj * lj
+                num = (num * - xs[k]) % p
+                den = (den * (xs[j] - xs[k])) % p
 
-    return int(round(secret_i))
+        lj = ( num * mod_inverse(den, p)) % p
+        secret = (secret + ys[j] * lj) % p
+
+    return secret
 
 def avg_runtime(function, *args, runs = 5):
     times = []
@@ -127,7 +136,7 @@ def avg_runtime(function, *args, runs = 5):
 def main():
     
     # just print out the values and their averages
-    # for n in [5, 10, 25, 50, 100]:
+    # for n in [5, 10, 25]:
     #     values = generate_value(n)
     #     avg1, t1 = non_private(values)
     #     avg2, t2 = paillier_average(values)
